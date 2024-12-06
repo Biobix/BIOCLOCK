@@ -14,10 +14,6 @@ It also contains three addtitional scripts:
 - Biolearn_EpiAge.py: This script is used to calculate GrimAge epigenetic age using the Biolearn python package (https://github.com/bio-learn/biolearn).
 - runcalcPCClock.R: This script is used to calculate epigenetic age according to the principal component clocks and is adapted from this repository: https://github.com/MorganLevineLab/PC-Clocks.
 
-## Packages
-
-The following package and software versions were used:
-
 ## Directory structure
 
 The scripts rely on the following directory structure:
@@ -39,3 +35,9 @@ The scripts rely on the following directory structure:
 └── Scripts
     └── Additional
 ```
+
+## Environment Information
+
+For reproducibility, see the full R session info in [Environment.md](./Environment.md).
+
+
