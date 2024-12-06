@@ -1,6 +1,6 @@
 # BIOCLOCK
 
-This repository contains the code used for the BIOCLOCK pilot study. The manuscript is currently being prepared for submission and will be available soon.
+This repository contains the code used for the *BIOCLOCK* pilot study. The manuscript is currently being prepared for submission and will be available soon.
 
 ## Scripts
 
