@@ -691,15 +691,15 @@ dplot_grimage_acc <- deltaPlot(
 
 combined_plot_horvath <- (plot_horvath | dplot_horvath_acc) +
     plot_layout(widths = c(2, 1), guides = "collect") +
-    plot_annotation(tag_levels = "A") &
+    plot_annotation(tag_levels = "a") &
     theme(plot.tag = element_text(size = 9))
-ggsave("Images/Paper/Horvath_EA.png", combined_plot_horvath, dpi = 1200, width = 16, height = 6, units = "cm")
+ggsave("Images/Paper/Horvath_EA.jpg", combined_plot_horvath, dpi = 1200, width = 16, height = 6, units = "cm", bg = "white", device = "jpg")
 
 combined_plot_grimage <- (plot_grimage | dplot_grimage_acc) +
     plot_layout(widths = c(2, 1), guides = "collect") +
-    plot_annotation(tag_levels = "A") &
+    plot_annotation(tag_levels = "a") &
     theme(plot.tag = element_text(size = 9))
-ggsave("Images/Paper/GrimAge_EA.png", combined_plot_grimage, dpi = 1200, width = 16, height = 6, units = "cm")
+ggsave("Images/Paper/GrimAge_EA.jpg", combined_plot_grimage, dpi = 1200, width = 16, height = 6, units = "cm", bg = "white", device = "jpg")
 
 
 ######### GrimAge correlation with VO2max & Neu
@@ -733,7 +733,7 @@ Neu_plot <- correlationPlot(
 combined_plot_corr <- (VO2max_plot | Neu_plot) +
     plot_annotation(tag_levels = 'A') & 
     theme(plot.tag = element_text(size = 9))
-ggsave("Images/Paper/GrimAge_Correlations.png", combined_plot_corr, dpi = 1200, width = 16, height = 6, units = "cm")
+ggsave("Images/Paper/GrimAge_Correlations.jpg", combined_plot_corr, dpi = 1200, width = 16, height = 6, units = "cm", bg = "white", device = "jpg")
 
 
 ######### (D) EAA correlations
@@ -768,7 +768,7 @@ D_EAA_plot <- correlationPlot(
 combined_plot <- (EAA_plot | D_EAA_plot) +
     plot_annotation(tag_levels = 'A') & 
     theme(plot.tag = element_text(size = 9))
-ggsave("Images/Paper/Clocks_Association.png", combined_plot, dpi = 1200, width = 16, height = 6, units = "cm")
+ggsave("Images/Paper/Clocks_Association.jpg", combined_plot, dpi = 1200, width = 16, height = 6, units = "cm", bg = "white", device = "jpg")
 
 ########## Delta Epigenetic age acceleration & bloodcells correlation
 
@@ -824,7 +824,7 @@ combined_plot <- BC_grimage_plot / BC_horvath_plot +
     plot_annotation(tag_levels = 'A') & 
     theme(plot.tag = element_text(size = 9)
 )
-ggsave("Images/Paper/Clocks_Bloodcells_Associations.png", combined_plot, dpi = 1200, width = 16, height = 18, units = "cm")
+ggsave("Images/Paper/Clocks_Bloodcells_Associations.jpg", combined_plot, dpi = 1200, width = 16, height = 18, units = "cm", bg = "white", device = "jpg")
 
 ######### Mean leukocyt composition pie chart
 
@@ -941,9 +941,9 @@ combined_piecharts <- (plot_spacer() | piechart_pre | piechart_post | plot_space
 
 combined_leukocytes <- combined_piecharts / BCs + 
     plot_layout(heights = c(1, 2)) +
-    plot_annotation(tag_levels = "A")  & 
+    plot_annotation(tag_levels = "a")  & 
     theme(plot.tag = element_text(size = 9))
-ggsave("Images/Paper/Leukocyte_Composition.png", combined_leukocytes, dpi = 1200, width = 16, height = 16, units = "cm", bg = "white")
+ggsave("Images/Paper/Leukocyte_Composition.jpg", combined_leukocytes, dpi = 1200, width = 16, height = 16, units = "cm", bg = "white", device = "jpg")
 
 
 ######### Training time
@@ -1023,4 +1023,4 @@ plot <- ggplot() +
         x = bquote(.(expression(Week)))
     ) +
     mytheme
-ggsave("Images/Paper/Training_Time.png", plot, dpi = 1200, width = 16, height = 6, units = "cm", bg = "white")
+ggsave("Images/Paper/Training_Time.jpg", plot, dpi = 1200, width = 16, height = 6, units = "cm", bg = "white", device = "jpg")
