@@ -25,6 +25,7 @@ library(writexl)
 
 setwd(paste0("/", file.path("data", "user_homes", "mennovd", "BIOKLOK")))
 
+dir.create("Data/Clocks", showWarnings = FALSE, recursive = TRUE)
 dir.create("Data/Objects", showWarnings = FALSE, recursive = TRUE)
 dir.create("Results/PrePro", showWarnings = FALSE, recursive = TRUE)
 dir.create("Images/QC", showWarnings = FALSE, recursive = TRUE)
@@ -175,7 +176,7 @@ for (method in 1:102) {
         mAge <- pheno[,c("array_id", "sex", "age")]
         colnames(mAge) <- c("id", "sex", "age")
         mAge$sex <- (mAge$sex == "male") + 1
-        write_feather(mAge, paste0(pipeline_data_dir, "PCmAge.feather"))
+        write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
 
         # see python script: Biolearn_EpiAge.py
         python <-  "/data/user_homes/mennovd/BIOKLOK/.venv/bin/python3.10"
@@ -359,4 +360,3 @@ pheno[pheno$has_replicate == TRUE, c("subject_id", "exercise_timepoint", "epigen
 
 # mean_noise_Horvath SEM_noise_Horvath mean_noise_GrimAge SEM_noise_GrimAge
 #                4.48              1.84               1.90             0.63
-
