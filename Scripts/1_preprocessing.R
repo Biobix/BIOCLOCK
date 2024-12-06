@@ -1,4 +1,3 @@
-
 #*######################################################
 #*######################################################
 #*######################################################
@@ -22,10 +21,14 @@ library(feather)
 library(arrow)
 library(readxl)
 library(writexl)
+library(git2r)
 
 setwd(paste0("/", file.path("data", "user_homes", "mennovd", "BIOKLOK")))
 
-dir.create("Data/Clocks", showWarnings = FALSE, recursive = TRUE)
+# In order to calculate the PC clocks, the PC-Clocks GitHub repository is required.
+# Clone it from: https://github.com/MorganLevineLab/PC-Clocks/tree/main
+# and name the folder "PC_Clocks" in the working directory.
+
 dir.create("Data/Objects", showWarnings = FALSE, recursive = TRUE)
 dir.create("Results/PrePro", showWarnings = FALSE, recursive = TRUE)
 dir.create("Images/QC", showWarnings = FALSE, recursive = TRUE)
@@ -35,10 +38,10 @@ dir.create("Images/PrePro", showWarnings = FALSE, recursive = TRUE)
 ####          Functions         ###
 ###################################
 
-# PC clock script is available at https://github.com/MorganLevineLab/PC-Clocks
+# PC clock script is retrieved from: https://github.com/MorganLevineLab/PC-Clocks
 source("Scripts/Additional/run_calcPCClocks.R")
 
-# Preprocessing pipeline script is available at: https://github.com/anilpsori/_pipelines_and_biomarkers/tree/main
+# Preprocessing pipeline script is retrieved from: https://github.com/anilpsori/_pipelines_and_biomarkers/tree/main
 source("Scripts/Additional/function_runPipelines.R")
 
 # Function to summarize duplicated CpGs for EPIC2 (retrieved from ENmix: https://github.com/xuz1/ENmix)
@@ -178,7 +181,7 @@ for (method in 1:102) {
         mAge$sex <- (mAge$sex == "male") + 1
         write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
 
-        # see python script: Biolearn_EpiAge.py
+        # see python script: Additional/Biolearn_EpiAge.py
         python <-  "/data/user_homes/mennovd/BIOKLOK/.venv/bin/python3.10"
         script <- "/data/user_homes/mennovd/BIOKLOK/Scripts/Additional/Biolearn_EpiAge.py"
         system2(python, args = c(script, pipeline), wait = TRUE)
@@ -197,7 +200,8 @@ for (method in 1:102) {
         
         mAge$female <- as.numeric(mAge$sex == "female")
 
-        PCmAge <- calcPCClocks(path_to_PCClocks_directory = "Clocks/Clock_Metadata/", datMeth = t(betas), datPheno = mAge[, c("age", "female")])
+        # 
+        PCmAge <- calcPCClocks(path_to_PCClocks_directory = "PC_Clocks/", datMeth = t(betas), datPheno = mAge[, c("age", "female")])
         PCmAge <- PCmAge[,c("PCHorvath1", "PCHorvath2", "PCGrimAge")]
         write_feather(PCmAge, paste0(pipeline_data_dir, "PCmAge.feather"))
         
@@ -360,3 +364,4 @@ pheno[pheno$has_replicate == TRUE, c("subject_id", "exercise_timepoint", "epigen
 
 # mean_noise_Horvath SEM_noise_Horvath mean_noise_GrimAge SEM_noise_GrimAge
 #                4.48              1.84               1.90             0.63
+
