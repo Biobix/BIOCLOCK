@@ -1,6 +1,8 @@
-BIOCLOCK
+# BIOCLOCK
 
 This repository contains the code used for the BIOCLOCK pilot study. The manuscript is currently being prepared for submission and will be available soon.
+
+## Scripts
 
 This repository contains three main scripts:
 - 1_preprocessing.R: This script performs quality control on the DNA methylation data, applies the 101 preprocessing pipelines, and estimates the epigenetic ages and blood leukocyte composition.
@@ -12,4 +14,6 @@ It also contains three addtitional scripts:
 - Biolearn_EpiAge.py: This script is used to calculate GrimAge epigenetic age using the Biolearn python package.
 - runcalcPCClock.R: This script is used to calculate epigenetic age according to the principal component clocks and is adapted from this repository: https://github.com/MorganLevineLab/PC-Clocks.
 
-The following software versions were used:
+## Packages
+
+The following package and software versions were used:
