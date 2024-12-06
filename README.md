@@ -17,3 +17,23 @@ It also contains three addtitional scripts:
 ## Packages
 
 The following package and software versions were used:
+
+## Directory structure
+
+The scripts rely on the following directory structure:
+
+.
+├── Data
+│   ├── Infinium
+│   ├── Objects
+│   └── Pheno
+├── Images
+│   ├── Paper
+│   ├── PrePro
+│   └── QC
+├── PC_Clocks
+├── Results
+│   ├── Analysis
+│   └── PrePro
+└── Scripts
+    └── Additional
