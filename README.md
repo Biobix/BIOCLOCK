@@ -22,6 +22,7 @@ The following package and software versions were used:
 
 The scripts rely on the following directory structure:
 
+```plaintext
 .
 ├── Data
 │   ├── Infinium
@@ -37,3 +38,4 @@ The scripts rely on the following directory structure:
 │   └── PrePro
 └── Scripts
     └── Additional
+```
