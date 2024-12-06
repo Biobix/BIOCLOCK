@@ -4,6 +4,7 @@
 
 # Session Data files
 .RData
+.Rdata
 .RDataTmp
 
 # User-specific files
@@ -47,3 +48,18 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Data files
+.xlsx
+.csv
+.idat
+.feather
+.xml
+.sdf
+.txt
+.cfg
+
+# Images
+.png
+.jpg
+.pdf
