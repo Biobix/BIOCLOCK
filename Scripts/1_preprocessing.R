@@ -21,7 +21,6 @@ library(feather)
 library(arrow)
 library(readxl)
 library(writexl)
-library(git2r)
 
 setwd(paste0("/", file.path("data", "user_homes", "mennovd", "BIOKLOK")))
 
