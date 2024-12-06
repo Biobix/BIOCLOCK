@@ -10,12 +10,12 @@ from biolearn.model_gallery import ModelGallery
 # Access command-line arguments passed from R
 pipeline = sys.argv[1] 
 
-os.chdir("/data/user_homes/mennovd/BIOKLOK/Data/PrePro_Opt/" + pipeline)
+os.chdir("/data/user_homes/mennovd/BIOKLOK/Results/PrePro/" + pipeline)
 
 betas = feather.read_feather("betas_no_suffix.feather")
 betas.set_index("id", inplace=True)
 
-pheno = feather.read_feather("pheno.feather")
+pheno = feather.read_feather("mAge.feather")
 pheno["sex"] = pheno["sex"].astype(int)
 pheno["id"] = ["X" + value for value in pheno["id"]]
 pheno.set_index("id", inplace=True)
