@@ -231,13 +231,16 @@ deltaPlot <- function(
             geom_boxplot(width = 0.3 / width, linewidth = 0.35 / width, alpha = 0.1, outlier.size = 1) +
             geom_line(aes(group = subject_id), color = "grey", linewidth = 0.15) +
             geom_point(aes(shape = "Mean"), stat = "summary", fun = mean, size = 1, color = "black") +
-            geom_line(aes(group = 1), stat = "summary", fun = mean, color = "black", linewidth = 0.25, show.legend = FALSE) + # Mean connecting line
+            geom_line(aes(group = 1), stat = "summary", fun = mean, color = "black", linewidth = 0.25) + # Mean connecting line
             labs(
                 title = if (length(titles) == 0) NULL else bquote(.(titles[[va]])), 
                 y = if (length(ytitles) == 0) NULL else bquote(.(ytitles[[va]])),
                 x = if (length(xtitles) == 0) NULL else bquote(.(xtitles[[va]])),
                 color = "Timepoint",
-                fill = "Timepoint"
+                shape = ""
+            ) +
+            guides(
+                fill = "none"
             ) +
             scale_color_manual(values = colors[c(2, 7)]) +
             scale_fill_manual(values = colors[c(2, 7)])
@@ -524,6 +527,7 @@ correlationPlot <- function(
 
 ######## EA ifo CA
 
+# make sure the "pre" timepoint comes first
 pheno_plot <- pheno %>%
     mutate(exercise_timepoint = recode(exercise_timepoint, "pre" = "Pre", "post" = "Post")) %>%
     mutate(exercise_timepoint = factor(exercise_timepoint, levels = c("Pre", "Post")))
@@ -533,6 +537,7 @@ pos <- min(pheno[, "age"])
 
 clock <- "epigenetic_age_GrimAge"
 
+# label the samples with replicates with a star
 label_positions <- pheno_plot %>%
     dplyr::filter(
         has_replicate,
@@ -546,9 +551,9 @@ label_positions <- pheno_plot %>%
     )
 
 plot_grimage <- ggplot(pheno_plot, aes(x = age, y = !!sym(clock))) +
-    geom_smooth(method = "lm", se = FALSE, color = "darkgray", linetype = "dashed", linewidth = 0.35) +
-    geom_abline(slope = 1, intercept = 0, color = "darkgray", linetype = "dotted", linewidth = 0.5) +
-    geom_path(aes(group = subject_id), linewidth = 0.2, color = "black") +
+    geom_smooth(method = "lm", se = FALSE, color = "darkgray", linetype = "dashed", linewidth = 0.35, show.legend = FALSE) +
+    geom_abline(slope = 1, intercept = 0, color = "darkgray", linetype = "dotted", linewidth = 0.5, show.legend = FALSE) +
+    geom_path(aes(group = subject_id), linewidth = 0.2, color = "black", show.legend = FALSE) +
     geom_text(
         data = label_positions,
         aes(x = age, y = clock_value, label = label),
@@ -559,7 +564,7 @@ plot_grimage <- ggplot(pheno_plot, aes(x = age, y = !!sym(clock))) +
         color = "black",
         show.legend = FALSE
     ) +
-    geom_point(aes(color = exercise_timepoint), size = 0.6) +
+    geom_point(aes(color = exercise_timepoint), size = 0.6, , show.legend = TRUE) +
     scale_color_manual(
         name = "Timepoint",
         values = c("Pre" = colors[2], "Post" = colors[7])
@@ -569,7 +574,7 @@ plot_grimage <- ggplot(pheno_plot, aes(x = age, y = !!sym(clock))) +
         "text",
         x = max(pheno[, "age"]), y = min(pheno[, "age"]),
         label = paste("EA == ", format(round(coef(lm(pheno[, clock] ~ pheno[, "age"]))[2], 2), nsmall = 2), "%*% CA +", format(round(coef(lm(pheno[, clock] ~ pheno[, "age"]))[1], 2), nsmall = 2)),
-        color = "black", hjust = 1, size = 1.5, parse = TRUE
+        color = "black", hjust = 1, size = 1.5, parse = TRUE, show.legend = FALSE
     ) +
     xlab("CA (Years)") +
     labs(color = "Timepoint") +
@@ -581,17 +586,16 @@ plot_grimage <- ggplot(pheno_plot, aes(x = age, y = !!sym(clock))) +
     annotate(
         "text",
         x = min(pheno[, "age"]), y = max(pheno[, clock]),
-        label = "R^2 == 0.84 * ',' ~ P < 2.092 %*% 10^{-20}", # mixed model anova & partial R2
-        hjust = 0, vjust = 1, color = "black", size = 1.5, parse = TRUE
+        label = "R^2 == 0.86 * ',' ~ P == 1.217 %*% 10^{-21}", # mixed model anova & partial R2
+        hjust = 0, vjust = 1, color = "black", size = 1.5, parse = TRUE, show.legend = FALSE
     ) +
     labs(
         x = bquote(.(expression(CA ~ (Years)))),
         y = bquote(.(expression(GrimAge ~ EA ~ (Years))))
     ) +
-    geom_point(data = data.frame(), aes(x = pos, y = pos), color = "darkgray", size = 0.6) +
-    geom_point(data = data.frame(), aes(x = pos + 0.5, y = pos + 0.5), color = "darkgray", size = 0.6) +
-    geom_line(data = data.frame(), aes(x = c(pos, pos + 0.5), y = c(pos, pos + 0.5)), color = "darkgray", linewidth = 0.3) +
-    theme(legend.position = "none")
+    geom_point(data = data.frame(), aes(x = pos, y = pos), color = "darkgray", size = 0.6, show.legend = FALSE) +
+    geom_point(data = data.frame(), aes(x = pos + 0.5, y = pos + 0.5), color = "darkgray", size = 0.6, show.legend = FALSE) +
+    geom_line(data = data.frame(), aes(x = c(pos, pos + 0.5), y = c(pos, pos + 0.5)), color = "darkgray", linewidth = 0.3, show.legend = FALSE)
 
 ## Horvath
 
@@ -610,9 +614,9 @@ label_positions <- pheno_plot %>%
     )
 
 plot_horvath <- ggplot(pheno_plot, aes(x = age, y = !!sym(clock))) +
-    geom_smooth(method = "lm", se = FALSE, color = "darkgray", linetype = "dashed", linewidth = 0.35) +
-    geom_abline(slope = 1, intercept = 0, color = "darkgray", linetype = "dotted", linewidth = 0.5) +
-    geom_path(aes(group = subject_id), linewidth = 0.2, color = "black") +
+    geom_smooth(method = "lm", se = FALSE, color = "darkgray", linetype = "dashed", linewidth = 0.35, show.legend = FALSE) +
+    geom_abline(slope = 1, intercept = 0, color = "darkgray", linetype = "dotted", linewidth = 0.5, show.legend = FALSE) +
+    geom_path(aes(group = subject_id), linewidth = 0.2, color = "black", show.legend = FALSE) +
     geom_text(
         data = label_positions,
         aes(x = age, y = clock_value, label = label),
@@ -623,7 +627,7 @@ plot_horvath <- ggplot(pheno_plot, aes(x = age, y = !!sym(clock))) +
         color = "black",
         show.legend = FALSE
     ) +
-    geom_point(aes(color = exercise_timepoint), size = 0.6) +
+    geom_point(aes(color = exercise_timepoint), size = 0.6, show.legend = TRUE) +
     scale_color_manual(
         name = "Timepoint",
         values = c("Pre" = colors[2], "Post" = colors[7])
@@ -633,7 +637,8 @@ plot_horvath <- ggplot(pheno_plot, aes(x = age, y = !!sym(clock))) +
         "text",
         x = max(pheno[, "age"]), y = min(pheno[, "age"]),
         label = paste("EA == ", format(round(coef(lm(pheno[, clock] ~ pheno[, "age"]))[2], 2), nsmall = 2), "%*% CA +", format(round(coef(lm(pheno[, clock] ~ pheno[, "age"]))[1], 2), nsmall = 2)),
-        color = "black", hjust = 1, size = 1.5, parse = TRUE
+        color = "black", hjust = 1, size = 1.5, parse = TRUE,
+        show.legend = FALSE
     ) +
     xlab("CA (Years)") +
     labs(color = "Timepoint") +
@@ -645,17 +650,17 @@ plot_horvath <- ggplot(pheno_plot, aes(x = age, y = !!sym(clock))) +
     annotate(
         "text",
         x = min(pheno[, "age"]), y = max(pheno[, clock]),
-        label = "R^2 == 0.71 * ',' ~ P == 1.333 %*% 10^{-13}",
-        hjust = 0, vjust = 1, color = "black", size = 1.5, parse = TRUE
+        label = "R^2 == 0.71 * ',' ~ P == 1.764 %*% 10^{-13}",
+        hjust = 0, vjust = 1, color = "black", size = 1.5, parse = TRUE,
+        show.legend = FALSE
     ) +
     labs(
         x = bquote(.(expression(CA ~ (Years)))),
         y = bquote(.(expression(Horvath ~ EA ~ (Years))))
     ) +
-    geom_point(data = data.frame(), aes(x = pos, y = pos), color = "darkgray", size = 0.6) +
-    geom_point(data = data.frame(), aes(x = pos + 0.5, y = pos + 0.5), color = "darkgray", size = 0.6) +
-    geom_line(data = data.frame(), aes(x = c(pos, pos + 0.5), y = c(pos, pos + 0.5)), color = "darkgray", linewidth = 0.3) +
-    theme(legend.position = "none")
+    geom_point(data = data.frame(), aes(x = pos, y = pos), color = "darkgray", size = 0.6, show.legend = FALSE) +
+    geom_point(data = data.frame(), aes(x = pos + 0.5, y = pos + 0.5), color = "darkgray", size = 0.6, show.legend = FALSE) +
+    geom_line(data = data.frame(), aes(x = c(pos, pos + 0.5), y = c(pos, pos + 0.5)), color = "darkgray", linewidth = 0.3, show.legend = FALSE)
 
 dplot_horvath_acc <- deltaPlot(
     data = bio,
@@ -715,13 +720,11 @@ VO2max_plot <- correlationPlot(
     labelyposition = "max",
     color = colors[5]
 )
-plotdata <- d_bio
-plotdata[,c("estimated_neutrophils")] <- d_bio[,c("estimated_neutrophils")]*100
 
 Neu_plot <- correlationPlot(
-    data = plotdata, 
+    data = d_bio, 
     yvars = "epigenetic_age_acceleration_GrimAge", 
-    xvars = "estimated_neutrophils", 
+    xvars = "neutrophils", 
     ncol = 1, 
     xtitles = expression(Delta * Neutrophils ~ ("%")),
     ytitles = expression(GrimAge ~ Delta * EAA ~ (Years)),
@@ -751,7 +754,7 @@ EAA_plot <- ggplot(plot_data, aes(x = epigenetic_age_acceleration_Horvath, y = e
     geom_path(aes(group = subject_id), color = "black", linewidth = 0.25) +
     geom_point(size = 0.6) +
     scale_color_manual(values = c("Pre" = colors[2], "Post" = colors[7])) +
-    theme(legend.position = "none")
+    labs(color = "Timepoint")
 
 D_EAA_plot <- correlationPlot(
     data = d_bio, 
@@ -762,7 +765,7 @@ D_EAA_plot <- correlationPlot(
     ytitles = expression(GrimAge ~ Delta * EAA ~ (Years)),
     labelxposition = "min",
     labelyposition = "max",
-    color = colors[3]
+    color = colors[1]
 )
 
 combined_plot <- (EAA_plot | D_EAA_plot) +
@@ -773,177 +776,156 @@ ggsave("Images/Paper/Clocks_Association.jpg", combined_plot, dpi = 1200, width =
 ########## Delta Epigenetic age acceleration & bloodcells correlation
 
 bloodcells <- c(
-    "estimated_neutrophils",
-    "estimated_CD4T_cells",
-    "estimated_CD8T_cells",
-    "estimated_natural_killer_cells",
-    "estimated_monocytes",
-    "estimated_B_cells"
+    "B_cells_naive",
+    "B_cells_memory",
+    "CD4T_cells_naive",
+    "CD4T_cells_memory",
+    "CD8T_cells_naive",
+    "CD8T_cells_memory",
+    "T_regulatory_cells",
+    "natural_killer_cells",
+    "eosinophils",
+    "basophils",
+    "monocytes",
+    "neutrophils"
 )
 
 bloodcell_names <- c(
-    expression(Neutrophils),
-    expression(CD4^{"+"} ~ T ~ Lymphocytes),
-    expression(CD8^{"+"} ~ T ~ Lymphocytes),
-    expression(Natural ~ Killer ~ Cells),
+    expression(B ~ Lymphocytes ~ Naive),
+    expression(B ~ Lymphocytes ~ Memory),
+    expression(CD4^{"+"} ~ T ~ Lymphocytes ~ Naive),
+    expression(CD4^{"+"} ~ T ~ Lymphocytes ~ Memory),
+    expression(CD8^{"+"} ~ T ~ Lymphocytes ~ Naive),
+    expression(CD8^{"+"} ~ T ~ Lymphocytes ~ Memory),
+    expression(Regulatory ~ T ~ Lymphocytes),
+    expression(Natural ~ Killer ~ Lymphocytes),
+    expression(Eosinophils),
+    expression(Basophils),
     expression(Monocytes),
-    expression(B ~ Lymphocytes)
+    expression(Neutrophils)
 )
 
-xtitles <- as.vector(lapply(bloodcell_names, function(name) {
+names(bloodcell_names) <- bloodcells
+
+color_vector <- c(
+  eosinophils = "#B15928",
+  B_cells_memory = "#FFFF99",
+  CD8T_cells_naive = "#6A3D9A",
+  basophils = "#CAB2D6",
+  T_regulatory_cells = "#FF7F00",
+  B_cells_naive = "#FDBF6F",
+  natural_killer_cells = "#E31A1C",
+  CD8T_cells_memory = "#FB9A99",
+  monocytes = "#33A02C",
+  CD4T_cells_naive = "#B2DF8A",
+  CD4T_cells_memory = "#1F78B4",
+  neutrophils = "#A6CEE3"
+)
+
+d_titles <- as.vector(lapply(bloodcell_names, function(name) {
     bquote(Delta * .(name) ~ ("%"))
 }))
 
-plotdata <- d_bio
-plotdata[,bloodcells] <- d_bio[,bloodcells]
-
 BC_grimage_plot <- correlationPlot(
-    data = plotdata,
+    data = d_bio,
     yvars = "epigenetic_age_acceleration_GrimAge",
     xvars = bloodcells, 
     ncol = 3, 
-    xtitles = xtitles,
+    xtitles = d_titles,
     ytitles = rep(expression(GrimAge ~ Delta * EAA ~ (Years)), length(bloodcell_names)),
-    color = colors[c(3, 4, 5, 6, 1, 2)],
+    color = color_vector[bloodcells],
     sortplotsbyX = FALSE
 )
-
-BC_horvath_plot <- correlationPlot(
-    data = plotdata,
-    yvars = "epigenetic_age_acceleration_Horvath",
-    xvars = bloodcells, 
-    ncol = 3, 
-    xtitles = xtitles,
-    ytitles = rep(expression(Horvath ~ Delta * EAA ~ (Years)), length(bloodcell_names)),
-    color = colors[c(3, 4, 5, 6, 1, 2)],
-    sortplotsbyX = FALSE
-)
-
-combined_plot <- BC_grimage_plot / BC_horvath_plot +
-    plot_layout(heights = c(1, 1)) +
+combined_plot <- BC_grimage_plot +
     plot_annotation(tag_levels = 'A') & 
     theme(plot.tag = element_text(size = 9)
 )
-ggsave("Images/Paper/Clocks_Bloodcells_Associations.jpg", combined_plot, dpi = 1200, width = 16, height = 18, units = "cm", bg = "white", device = "jpg")
+ggsave("Images/Paper/GrimAge_Bloodcells_Associations.jpg", combined_plot, dpi = 1200, width = 16, height = 18, units = "cm", bg = "white", device = "jpg")
 
-######### Mean leukocyt composition pie chart
+BC_horvath_plot <- correlationPlot(
+    data = d_bio,
+    yvars = "epigenetic_age_acceleration_Horvath",
+    xvars = bloodcells, 
+    ncol = 3, 
+    xtitles = d_titles,
+    ytitles = rep(expression(Horvath ~ Delta * EAA ~ (Years)), length(bloodcell_names)),
+    color = color_vector[bloodcells],
+    sortplotsbyX = FALSE
+)
+combined_plot <- BC_horvath_plot +
+    plot_annotation(tag_levels = 'A') & 
+    theme(plot.tag = element_text(size = 9)
+)
+ggsave("Images/Paper/Horvath_Bloodcells_Associations.jpg", combined_plot, dpi = 1200, width = 16, height = 18, units = "cm", bg = "white", device = "jpg")
+
+######### Mean leukocyte composition bar chart
 
 leukocytes <- bio %>%
     filter(!dropout, !excluded) %>%
-    ungroup() %>%
-    dplyr::select(exercise_timepoint, contains("estimated_")) %>%
-    rename(
-        "CD4+ T Lymphocytes" = estimated_CD4T_cells,
-        "CD8+ T Lymphocytes" = estimated_CD8T_cells,
-        "Natural Killer Cells" = estimated_natural_killer_cells,
-        "B Lymphocytes" = estimated_B_cells,
-        "Monocytes" = estimated_monocytes,
-        "Neutrophils" = estimated_neutrophils
-    ) %>%
+    dplyr::select(exercise_timepoint, all_of(bloodcells)) %>%
     filter(exercise_timepoint %in% c("pre", "post")) %>%
-    mutate(exercise_timepoint = factor(recode(exercise_timepoint, "pre" = "Pre", "post" = "Post"), levels = c("Pre", "Post"))) %>%
-    pivot_longer(cols = -exercise_timepoint, names_to = "Leukocyt", values_to = "Concentration") %>%
-    group_by(exercise_timepoint, Leukocyt) %>%
+    mutate(exercise_timepoint = factor(recode(exercise_timepoint, "pre" = "Pre", "post" = "Post"), levels = c("Post", "Pre"))) %>%
+    pivot_longer(cols = -exercise_timepoint, names_to = "leukocyte", values_to = "concentration") %>%
+    group_by(exercise_timepoint, leukocyte) %>%
     summarize(across(everything(), mean, na.rm = TRUE)) %>%
-    mutate(Concentration = (Concentration / sum(Concentration)) * 100)
+    arrange(concentration) %>%
+    mutate(
+        leukocyte = factor(leukocyte, levels = unique(leukocyte)),
+        concentration = round(concentration, 2)
+    )
 
-leukocytes_pre <- leukocytes %>%
-    filter(exercise_timepoint == "Pre") %>%
-    ungroup() %>%
-    dplyr::select(-exercise_timepoint) %>%
-    dplyr::arrange(-Concentration) %>%
-    mutate(Leukocyt = factor(Leukocyt, levels = Leukocyt))
-
-leukocytes_post <- leukocytes %>%
-    filter(exercise_timepoint == "Post") %>%
-    ungroup() %>%
-    dplyr::select(-exercise_timepoint) %>%
-    dplyr::arrange(-Concentration) %>%
-    mutate(Leukocyt = factor(Leukocyt, levels = Leukocyt))
-
-# Pie charts
-
-shared_fill_scale <- scale_fill_manual(values = colors[c(3, 4, 5, 6, 1, 2)])
-
-piechart_pre <- ggplot(leukocytes_pre, aes(x = "", y = Concentration, fill = Leukocyt)) +
-    geom_bar(stat = "identity", width = 1, alpha = 0.8) +
-    coord_polar("y", start = 0) +
-    shared_fill_scale +  
-    theme_void() +
-    theme(
-        legend.position = "none",
-        plot.title = element_text(margin = margin(b = 8, t = 8), hjust = 0.5, size = 8)
-    ) +  
-    geom_text(
-        aes(label = paste0(round(Concentration, 2), "%")), 
-        position = position_stack(vjust = 0.5),  # Center the text in each slice
-        size = 2
-    ) + 
-    labs(title = "Pre-training")
-
-piechart_post <- ggplot(leukocytes_post, aes(x = "", y = Concentration, fill = Leukocyt)) +
-    geom_bar(stat = "identity", width = 1, alpha = 0.8) +
-    coord_polar("y", start = 0) +
-    shared_fill_scale +  
-    theme_void() +
-    geom_text(
-        aes(label = paste0(round(Concentration, 2), "%")), 
-        position = position_stack(vjust = 0.5),  # Center the text in each slice
-        size = 2
+bar_chart <- ggplot(leukocytes, aes(x = exercise_timepoint, y = concentration, fill = leukocyte)) +
+    geom_bar(stat = "identity", position = "fill") +  # position = "fill" for proportional bars
+    coord_flip() +  # Flip for horizontal bars
+    scale_fill_manual(
+        values = color_vector,
+        labels = bloodcell_names
     ) +
+    mytheme +
     theme(
-        legend.title = element_blank(),
-        legend.text = element_text(size = 6),
-        legend.spacing.y = unit(0.25, 'cm'),
-        legend.spacing.x = unit(0.50, 'cm'),
-        legend.key.height = unit(0.25, 'cm'),
-        legend.key.width = unit(0.25, 'cm'),
-        plot.title = element_text(margin = margin(b = 8, t = 8), hjust = 0.5, size = 8)
-    ) + 
-    labs(title = "Post-training")
+                legend.title = element_blank()
+    ) +
+    geom_text(
+        aes(label = ifelse(concentration > 0.1, concentration, "")),
+        position = position_fill(vjust = 0.5),
+        size = 0.8, angle = 90
+    ) +
+    geom_text(
+        aes(label = ifelse(concentration < 0.1, concentration, "")),
+        position = position_fill(vjust = 0.5),
+        size = 0.8, angle = 90, vjust = 1,
+    ) +
+    scale_y_continuous(
+        labels = function(x) x * 100,  # Horizontal axis in percentages
+        breaks = seq(0, 1, 0.2)  # Define the tick marks
+    ) +
+    labs(
+        title = NULL,
+        x = NULL,
+        y = "Proportion (%)"
+    ) +
+    guides(fill = guide_legend(reverse = TRUE))  # Reverse the order of the legend
 
 # Deltaplots
 
-bloodcell_names <- c(
-    expression(Neutrophils),
-    expression(CD4^{"+"} ~ T ~ Lymphocytes),
-    expression(CD8^{"+"} ~ T ~ Lymphocytes),
-    expression(Natural ~ Killer ~ Cells),
-    expression(Monocytes),
-    expression(B ~ Lymphocytes)
-)
-
-plotdata <- bio
-plotdata[,c("estimated_B_cells", "estimated_CD4T_cells", "estimated_CD8T_cells", "estimated_monocytes", "estimated_neutrophils", "estimated_natural_killer_cells")] <- bio[,c("estimated_B_cells", "estimated_CD4T_cells", "estimated_CD8T_cells", "estimated_monocytes", "estimated_neutrophils", "estimated_natural_killer_cells")]
-
-ytitles <- sapply(bloodcell_names, function(name) {
-    bquote(Delta * .(name) ~ ("%"))
-})
-
 BCs <- deltaPlot(
-    data = plotdata, 
-    vars = c("estimated_neutrophils", "estimated_CD4T_cells", "estimated_CD8T_cells", "estimated_natural_killer_cells", "estimated_monocytes", "estimated_B_cells"), 
+    data = bio, 
+    vars = bloodcells, 
     ncol = 3, 
     dropouts = bio %>% filter(dropout | excluded) %>% pull(subject_id),
     plotsegments = "all",
     display =  c("mean", "effect", "pval"),
-    ytitles = ytitles,
-    legend = FALSE,
+    ytitles = bloodcell_names,
+    legend = TRUE,
     collectaxis = FALSE,
     width = 1.1
 )
 
-# add spacers to center top and bottom figure
-combined_piecharts <- (plot_spacer() | piechart_pre | piechart_post | plot_spacer()) +
-    plot_layout(widths = c(0.3, 1, 1, 0.3)) +
-    plot_annotation(tag_levels = 'A') & 
-    theme(plot.tag = element_text(size = 9))
-
-combined_leukocytes <- combined_piecharts / BCs + 
-    plot_layout(heights = c(1, 2)) +
+combined_leukocytes <- bar_chart / BCs + 
+    plot_layout(heights = c(1, 4)) +
     plot_annotation(tag_levels = "a")  & 
     theme(plot.tag = element_text(size = 9))
-ggsave("Images/Paper/Leukocyte_Composition.jpg", combined_leukocytes, dpi = 1200, width = 16, height = 16, units = "cm", bg = "white", device = "jpg")
+ggsave("Images/Paper/Leukocyte_Composition.jpg", combined_leukocytes, dpi = 1200, width = 16, height = 27, units = "cm", bg = "white", device = "jpg")
 
 
 ######### Training time
@@ -1013,14 +995,19 @@ plot <- ggplot() +
     geom_hline(yintercept = 100 / 12, linetype = "dotted", color = colors[7], linewidth = 0.25) +
     scale_y_continuous(sec.axis = sec_axis(~ . * 12, name = bquote(.(expression(Adherence ~ ("%")))), breaks = c(0, 50, 100, 150))) +
     scale_x_continuous(breaks = c(0, 5, 10, 15, 20, 25)) +
-    guides(color = guide_legend(title = NULL)) +
     scale_color_manual(
         values = c("executed" = colors[5], "planned" = colors[3], "adherence" = colors[7]),
-        breaks = c("Planned", "Executed", "Adherence")
+        breaks = c("planned", "executed", "adherence"),
+        labels = c("Executed", "Planned", "Adherence")   # Capitalized labels
     ) +
     labs(
         y = bquote(.(expression(Planned ~ "&" ~ Executed ~ Training ~ (Hours)))),
         x = bquote(.(expression(Week)))
     ) +
-    mytheme
+    mytheme +
+    theme(
+        legend.position = "right",
+        legend.title = element_blank()
+    ) +
+    guides(color = guide_legend(title = NULL))
 ggsave("Images/Paper/Training_Time.jpg", plot, dpi = 1200, width = 16, height = 6, units = "cm", bg = "white", device = "jpg")

@@ -1,3 +1,4 @@
+
 #*######################################################
 #*######################################################
 #*######################################################
@@ -15,6 +16,7 @@ library(ENmix)
 library(wateRmelon)
 library(IlluminaHumanMethylationEPICv2manifest)
 library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
+library(EpiDISH)
 library(dplyr)
 library(tidyr)
 library(feather)
@@ -26,7 +28,7 @@ setwd(paste0("/", file.path("data", "user_homes", "mennovd", "BIOKLOK")))
 
 # In order to calculate the PC clocks, the PC-Clocks GitHub repository is required.
 # Clone it from: https://github.com/MorganLevineLab/PC-Clocks/tree/main
-# and name the folder "PC_Clocks" in the working directory.
+# Put the folder in Scripts/Additional and name the folder "PC_Clocks".
 
 dir.create("Data/Objects", showWarnings = FALSE, recursive = TRUE)
 dir.create("Results/PrePro", showWarnings = FALSE, recursive = TRUE)
@@ -118,7 +120,7 @@ for (method in 1:101) {
     pipeline_image_dir <- paste0("Images/PrePro/", pipeline, "/")
     dir.create(pipeline_image_dir, recursive = TRUE, showWarnings = FALSE)
 
-    if (method %in% c(86, 87, 88, 89, 92, 96, 97, 99, 100)) next # not compatible with EPIC2
+    if (method %in% c(89, 92, 100)) next # not compatible with EPIC2
     
     if(!(file.exists(paste0(pipeline_data_dir, "betas_no_suffix.feather")))) {
         output <- runPipelines(RGset, method = method, returnAll = FALSE, removeCpG = QC$badCpG)
@@ -148,7 +150,7 @@ for (method in 1:101) {
         multifreqpoly(betas_2, main = "Multifreqpoly: Infinium II", xlab = "Beta value", legend = NULL)
         dev.off()
 
-        # Remove probe suffixes and save betas
+        # Summarize replicate probes (remove probe suffixes) and save betas
         betas <- rm.cgsuffix(betas)
         betas <- as.data.frame(betas)
         betas$id <- rownames(betas)
@@ -162,9 +164,9 @@ for (method in 1:101) {
 
 # Estimate Horvath & GrimAge epigenetic ages using the Biolearn & PC-Clocks packages
 
-for (method in 1:102) {
+for (method in 1:101) {
 
-    if (method %in% c(86, 87, 88, 89, 92, 96, 97, 99, 100)) next
+    if (method %in% c(89, 92, 100)) next
 
     pipeline <- method_to_pipeline(method)
     cat("Calculating Epigenetic Clocks:", method, pipeline, "\n")
@@ -175,9 +177,9 @@ for (method in 1:102) {
 
         # Biolearn clocks
         load("Data/pheno.Rdata")
-        mAge <- pheno[,c("array_id", "sex", "age")]
-        colnames(mAge) <- c("id", "sex", "age")
-        mAge$sex <- (mAge$sex == "male") + 1
+        mAge <- pheno[,c("array_id", "subject_id", "exercise_timepoint", "sex", "age", "has_replicate")]
+        mAge$female <- as.numeric(mAge$sex == "female")
+        mAge$sex <- as.numeric(mAge$sex == "male") + 1
         write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
 
         # see python script: Additional/Biolearn_EpiAge.py
@@ -196,15 +198,12 @@ for (method in 1:102) {
         betas$id <- NULL
         betas <- as.matrix(betas)
         rownames(betas) <- CpGs
-        
-        mAge$female <- as.numeric(mAge$sex == "female")
 
-        # 
-        PCmAge <- calcPCClocks(path_to_PCClocks_directory = "PC_Clocks/", datMeth = t(betas), datPheno = mAge[, c("age", "female")])
-        PCmAge <- PCmAge[,c("PCHorvath1", "PCHorvath2", "PCGrimAge")]
-        write_feather(PCmAge, paste0(pipeline_data_dir, "PCmAge.feather"))
+        PC_mAge <- calcPCClocks(path_to_PCClocks_directory = "Scripts/Additional/PC_Clocks/", datMeth = t(betas), datPheno = mAge[, c("age", "female")])
+        PC_mAge <- PC_mAge[,c("PCHorvath1", "PCHorvath2", "PCGrimAge")]
+        save(PC_mAge, file = paste0(pipeline_data_dir, "PC_mAge.Rdata"))
         
-        mAge <- cbind(mAge, PCmAge)
+        mAge <- cbind(mAge, PC_mAge)
         write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
     }
 }
@@ -213,12 +212,12 @@ for (method in 1:102) {
 ####    Leukocyte Prediction    ###
 ###################################
 
-# Estimate blood leukocyte fractions using the ENmix (estimateCellProp) method
-# uses the Houseman et al. (2012) Quadratic Programming method
+# Estimate blood leukocyte fractions using the EpiDISH RCP method
+data(cent12CT.m)
 
-for (method in 1:102) {
+for (method in 1:101) {
 
-    if (method %in% c(86, 87, 88, 89, 92, 96, 97, 99, 100)) next
+    if (method %in% c(89, 92, 100)) next
 
     pipeline <- method_to_pipeline(method)
     cat("Calculating Blood Cell Composition:", method, pipeline, "\n")
@@ -227,119 +226,175 @@ for (method in 1:102) {
 
     if (!file.exists(paste0(pipeline_data_dir, "bloodcells.feather"))) {
 
-        mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
         betas <- arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
-
         CpGs <- betas$id
         betas$id <- NULL
         betas <- as.matrix(betas)
         rownames(betas) <- CpGs
 
+        # Intersect betas and reference matrix CpGs
+        cpgs <- intersect(rownames(betas), rownames(reference_matrix_betas))
+        betas_subset <- betas[cpgs,]
+        ref_subset <- as.matrix(reference_matrix_betas)[cpgs,]
+
         # Estimate leukocyte proportions
-        cellProp <- estimateCellProp(betas, refdata = "FlowSorted.Blood.EPIC", nonnegative = TRUE, nProbes = 100, normalize = FALSE)
-        cellProp <- cellProp[, -1]
+        bloodFractions <- epidish(beta.m = betas_subset, ref.m = ref_subset, method = "RPC")$estF
 
         # Ensure that the proportions sum to one and are percentage
-        cellProp <- (cellProp / rowSums(cellProp))*100
+        bloodFractions <- (bloodFractions / rowSums(bloodFractions))*100
 
-        mAge <- cbind(mAge, cellProp)
-        arrow::write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
-        arrow::write_feather(cellProp, paste0(pipeline_data_dir, "bloodcells.feather"))
+        mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+        mAge <- cbind(mAge, bloodFractions)
+        write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
+        save(bloodFractions, file = paste0(pipeline_data_dir, "bloodcells.Rdata"))
     }
 }
 
-###################################
-####    Preprocessing Results   ###
-###################################
+##########################################
+####    Preprocessing optimalisation   ###
+##########################################
 
-bloodcells <- c("Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK")
-clocks <- c("Horvath1", "Horvath2", "GrimAge1", "GrimAge2", "PCHorvath1", "PCHorvath2", "PCGrimAge")
+bloodcells <- c(
+    "CD4Tnv",
+    "CD4Tmem",
+    "CD8Tmem",
+    "CD8Tnv",
+    "Treg",
+    "Bmem",
+    "Bnv",
+    "Baso",
+    "Eos",
+    "NK",
+    "Neu",
+    "Mono"
+)
+
+clocks <- c(
+    "Horvath1", 
+    "Horvath2", 
+    "PCHorvath1", 
+    "PCHorvath2", 
+    "GrimAge1", 
+    "GrimAge2",
+    "PCGrimAge"
+)
+
 predictors <- c(clocks, bloodcells)
 
-# Estimate the technical measurement noise using the replicate samples for each predictor and pipeline
-Noise <- data.frame(row.names = predictors)
-for (method in 1:102) {
+# Calculate the biological and technical variance for each predictor and each preprocessing pipeline
+TechVar <- data.frame(row.names = predictors)
+BioVar <- data.frame(row.names = predictors)
 
-    if (method %in% c(86, 87, 88, 89, 92, 96, 97, 99, 100)) next
+for (method in 1:101) {
 
+    if (method %in% c(89, 92, 100)) next
+
+    # Load the predictor data
     pipeline <- method_to_pipeline(method)
     cat("Calculating measurement noise:", method, pipeline, "\n")
-
     pipeline_data_dir <- paste0("Results/PrePro/", pipeline, "/")
+    mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
 
-    mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
-    mAge <- as.data.frame(mAge)
-    rownames(mAge) <- mAge$id
+    # Calculate the technical variance
+    techvar <- mAge[mAge$has_replicate, c("subject_id", "exercise_timepoint", predictors)] %>%
+            group_by(subject_id, exercise_timepoint) %>%
+            summarize_at(predictors, function(x) var(x)) %>%
+            ungroup() %>%
+            summarize_at(predictors, function(x) mean(x)) %>%
+            as.matrix() %>%
+            as.vector()
 
-    load("Data/Objects/pheno.Rdata")
+    TechVar[,pipeline] <- techvar
 
-    mAge <- cbind(pheno, mAge[rownames(pheno), predictors])
+    # Calculate the biological variance
+    biovar <- mAge[, c("subject_id", "exercise_timepoint", predictors)] %>%
+            group_by(subject_id, exercise_timepoint) %>%
+            summarize_at(predictors, function(x) mean(x)) %>%
+            ungroup() %>%
+            summarize_at(predictors, function(x) var(x)) %>%
+            as.matrix() %>%
+            as.vector()
 
-    noise_reps <- mAge[mAge$has_replicate == TRUE, c("subject_id", "exercise_timepoint", predictors)] %>%
-        group_by(subject_id, exercise_timepoint) %>%
-        summarize_at(predictors, function(x) abs(diff(x))) %>%
-        ungroup() %>%
-        summarize_at(predictors, function(x) mean(x)) %>%
-        as.matrix() %>%
-        as.vector()
-    
-    Noise[,pipeline] <- noise_reps
+    BioVar[,pipeline] <- biovar
 }
 
-save(Noise, file = "Data/Objects/Noise.Rdata")
+save(TechVar, file = "Data/Objects/TechVar.Rdata")
+save(BioVar, file = "Data/Objects/BioVar.Rdata")
 
-# Retrieve pipeline with the lowest measurement noise for each predictor
-OptimalPipelines <- data.frame(
-    Predictor = c(clocks, bloodcells),
-    Pipeline = rep("", length(clocks) + length(bloodcells)),
-    Noise = rep(NA, length(clocks) + length(bloodcells))
-)
-for (clock in clocks) {
-    ix <- which(OptimalPipelines$Predictor == clock)
-    OptimalPipelines[ix, "Pipeline"] <- names(which.min(Noise[clock,]))
-    OptimalPipelines[ix, "Noise"] <- min(Noise[clock,])
-}
-# Take the pipeline that has the lowest mean z-scaled (per cell type) measurement noise, over all cell types
-Tech_bloodcells <- t(scale(t(Noise[bloodcells,]), center = TRUE, scale = TRUE))
-Tech_bloodcells <- colMeans(Tech_bloodcells)
-pipeline_bloodcells <- names(which.min(Tech_bloodcells))
-for (bc in bloodcells) {
-    ix <- which(OptimalPipelines$Predictor == bc)
-    OptimalPipelines[ix, "Pipeline"] <- pipeline_bloodcells
-    OptimalPipelines[ix, "Noise"] <- Noise[bc, pipeline_bloodcells]
-}
-save(OptimalPipelines, file = "Data/Objects/OptimalPipelines.Rdata")
+# Calculate the ratio of biological variance over technical variance (for each predictor and preprocessing pipeline)
+BT <- BioVar/(TechVar + 1e-10)
+BT_max <- rowMaxs(as.matrix(BT), na.rm = TRUE)
+optimal_pipelines <- sapply(predictors, function(predictor) colnames(BT)[BT[predictor,] == BT_max[predictor]])
+BT_pipelines <- data.frame(predictors = predictors, pipeline = optimal_pipelines)
+BT_pipelines[predictors, "Bio/Tech"] <- BT_max[predictors]
+BT_pipelines[predictors,]
+#            predictors                     pipeline     Bio/Tech
+# Horvath1     Horvath1             watermelon_nanet 2.850053e+01
+# Horvath2     Horvath2       enmix_est_nodye_q3_rcp 1.056976e+02
+# PCHorvath1 PCHorvath1    enmix_est_mean_nonorm_rcp 3.900147e+02
+# PCHorvath2 PCHorvath2       enmix_oob_nodye_q2_rcp 3.707282e+02
+# GrimAge1     GrimAge1   minfi_raw_quantile_nostrat 4.713229e+02
+# GrimAge2     GrimAge2 minfi_funnorm_nobg_nodyecorr 9.156775e+01
+# PCGrimAge   PCGrimAge     enmix_neg_nodye_q2_norcp 2.329356e+03
+# CD4Tnv         CD4Tnv          watermelon_raw_BMIQ 4.369612e+01
+# CD4Tmem       CD4Tmem         minfi_noob_nodyecorr 3.052212e+01
+# CD8Tmem       CD8Tmem       enmix_oob_relic_q1_rcp 2.331840e+02
+# CD8Tnv         CD8Tnv       enmix_neg_relic_q3_rcp 2.389515e+01
+# Treg             Treg    enmix_neg_mean_nonorm_rcp 2.290357e+01
+# Bmem             Bmem   enmix_est_nodye_nonorm_rcp 2.065470e+02
+# Bnv               Bnv       enmix_est_nodye_q3_rcp 1.324842e+01
+# Baso             Baso       enmix_est_nodye_q3_rcp 4.933858e+00
+# Eos               Eos enmix_est_relic_nonorm_norcp 3.960289e+05
+# NK                 NK             watermelon_danet 7.473183e+01
+# Neu               Neu             watermelon_danes 8.381748e+01
+# Mono             Mono             watermelon_nasen 5.656306e+01
 
-# Horvath and GrimAge clocks with the lowest mean measurement error:
-# PCHorvath1 clock with the enmix_est_nodye_nonorm_rcp has a mean measurement error of 0.3735464 years
-# PCGrimAge clock with the enmix_oob_nodye_q2_norcp has a mean measurement error of 0.1583529 years
-# watermelon_dasen is optimal for the leukocyte deconvolution
+# For the leukocyte fractions, calculate the mean z-scaled ratio of biological variance over technical variance
+BT_BC <- BT[bloodcells,]
+BT_BC_scaled <- t(scale(t(BT_BC), center = TRUE, scale = TRUE))
+BT_BC_mean <- colMeans(as.matrix(BT_BC_scaled), na.rm = TRUE)
+pipeline_bloodcells <- names(which.max(BT_BC_mean))
+pipeline_bloodcells
+BT_BC_mean[pipeline_bloodcells]
+# enmix_est_nodye_q3_rcp 
+#               1.002638
+
+# Optimal pipelines:
+# PCHorvath1 clock with the enmix_est_mean_nonorm_rcp pipeline
+# PCGrimAge clock with the enmix_neg_nodye_q2_norcp pipeline
+# enmix_est_nodye_q3_rcp is optimal for the leukocyte deconvolution
 
 # Retrieve the optimal estimates for each predictor
 load("Data/Objects/pheno.Rdata")
 
-pipeline <- "enmix_est_nodye_nonorm_rcp"
+pipeline <- "enmix_est_mean_nonorm_rcp"
 pipeline_data_dir <- paste0("Results/PrePro/", pipeline, "/")
-mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
 
 pheno$epigenetic_age_Horvath <- mAge$PCHorvath1
 
-pipeline <- "enmix_oob_nodye_q2_norcp"
+pipeline <- "enmix_neg_nodye_q2_norcp"
 pipeline_data_dir <- paste0("Results/PrePro/", pipeline, "/")
-mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
 
 pheno$epigenetic_age_GrimAge <- mAge$PCGrimAge
 
-pipeline <- "watermelon_dasen"
+pipeline <- "enmix_est_nodye_q3_rcp"
 pipeline_data_dir <- paste0("Results/PrePro/", pipeline, "/")
-mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
 
-pheno$estimated_B_cells <- mAge$Bcell
-pheno$estimated_CD4T_cells <- mAge$CD4T
-pheno$estimated_CD8T_cells <- mAge$CD8T
-pheno$estimated_natural_killer_cells <- mAge$NK
-pheno$estimated_monocytes <- mAge$Mono
-pheno$estimated_neutrophils <- mAge$Neu
+pheno$B_cells_naive <- mAge$Bnv
+pheno$B_cells_memory <- mAge$Bmem
+pheno$CD4T_cells_naive <- mAge$CD4Tnv
+pheno$CD4T_cells_memory <- mAge$CD4Tmem
+pheno$CD8T_cells_naive <- mAge$CD8Tnv
+pheno$CD8T_cells_memory <- mAge$CD8Tmem
+pheno$T_regulatory_cells <- mAge$Treg
+pheno$natural_killer_cells <- mAge$NK
+pheno$eosinophils <- mAge$Eos
+pheno$basophils <- mAge$Baso
+pheno$monocytes <- mAge$Mono
+pheno$neutrophils <- mAge$Neu
 
 # Save optimal estimates
 save(pheno, file = "Data/Objects/pheno.Rdata")
@@ -361,6 +416,5 @@ pheno[pheno$has_replicate == TRUE, c("subject_id", "exercise_timepoint", "epigen
         SEM_noise_GrimAge = sd(epigenetic_age_GrimAge * 12) / sqrt(n())
     )
 
-# mean_noise_Horvath SEM_noise_Horvath mean_noise_GrimAge SEM_noise_GrimAge
-#                4.48              1.84               1.90             0.63
-
+#   mean_noise_Horvath SEM_noise_Horvath mean_noise_GrimAge SEM_noise_GrimAge
+#                 5.05              1.36               1.91             0.500

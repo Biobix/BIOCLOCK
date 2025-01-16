@@ -5,6 +5,7 @@ import sys
 import feather
 import pyarrow.feather as feather
 import pandas as pd
+import biolearn
 from biolearn.model_gallery import ModelGallery
 
 # Access command-line arguments passed from R

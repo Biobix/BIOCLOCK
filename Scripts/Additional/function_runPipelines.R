@@ -2,6 +2,158 @@ library(minfi)
 library(ENmix)
 library(wateRmelon)
 
+########################################################################
+########################################################################
+
+# The minfi preprocessIllumina function does not work on EPICv2 due to a small incompatibility
+# I have corrected the incompatiility in the following functions
+# functions adapted from: https://github.com/hansenlab/minfi
+
+.isRGOrStop <- function(object) {
+    if (!is(object, "RGChannelSet")) {
+        stop("object is of class '", class(object), "', but needs to be of ",
+             "class 'RGChannelSet' or 'RGChannelSetExtended'")
+    }
+}
+
+.is27k <- function(object) {
+    annotation(object)["array"] == "IlluminaHumanMethylation27k"
+}
+
+.is450k <- function(object) {
+    annotation(object)["array"] == "IlluminaHumanMethylation450k"
+}
+
+.isEPIC <- function(object) {
+    annotation(object)["array"] == "IlluminaHumanMethylationEPIC"
+}
+
+.isEPICv2 <- function(object) {
+    annotation(object)["array"] == "IlluminaHumanMethylationEPICv2"
+}
+
+#get .getManifestString() function from utils.R
+.getManifestString <- function(annotation) {
+    if (length(annotation) == 1) {
+        if (annotation == "Unknown") {
+            stop("Cannot get Manifest object for an 'Unknown' array")
+        }
+        return(paste0(annotation, "manifest"))
+    }
+    if ("array" %in% names(annotation)) {
+        if (annotation["array"] == "Unknown") {
+            stop("Cannot get Manifest object for an 'Unknown' array")
+        }
+        return(paste0(annotation["array"], "manifest"))
+    }
+    stop("unable to get the manifest string for this object")
+}
+
+#define pmax2() and pmin2() functions
+pmax2 <- function(x, y) {
+    pmax(x, y)
+}
+pmin2 <- function(x, y) {
+    pmin(x, y)
+}
+
+normalize.illumina.control <- function(rgSet, reference = 1) {
+    # This function returns an rgset, not a methylset
+    # code duplication
+    Green <- getGreen(rgSet)
+    Red <- getRed(rgSet)
+
+    if (.is450k(rgSet) || .isEPIC(rgSet) || .isEPICv2(rgSet)) {
+        AT.controls <- getControlAddress(
+            object = rgSet,
+            controlType = c("NORM_A", "NORM_T"))
+        CG.controls <- getControlAddress(
+            object = rgSet,
+            controlType = c("NORM_C", "NORM_G"))
+    }
+    if (.is27k(rgSet)) {
+        AT.controls <- getControlAddress(
+            object = rgSet,
+            controlType = "Normalization-Red")
+        CG.controls <- getControlAddress(
+            object = rgSet,
+            controlType = "Normalization-Green")
+    }
+
+    Green.avg <- colMeans2(Green, rows = match(CG.controls, rownames(Green)))
+    Red.avg <- colMeans2(Red, rows = match(AT.controls, rownames(Red)))
+    ref <- (Green.avg + Red.avg)[reference] / 2
+    if (is.na(ref)) {
+        stop("perhaps 'reference' refer to an array that is not present.")
+    }
+    Green.factor <- ref / Green.avg
+    Red.factor <- ref / Red.avg
+    Green <- sweep(Green, 2, FUN = "*", Green.factor)
+    Red <- sweep(Red, 2, FUN = "*", Red.factor)
+    assay(rgSet, "Green") <- Green
+    assay(rgSet, "Red") <- Red
+    rgSet
+}
+
+bgcorrect.illumina <- function(rgSet) {
+    .isRGOrStop(rgSet)
+    Green <- getGreen(rgSet)
+    Red <- getRed(rgSet)
+    if (.is450k(rgSet) || .isEPIC(rgSet) || .isEPICv2(rgSet)) {
+        NegControls <- getControlAddress(rgSet, controlType = "NEGATIVE")
+    }
+    if (.is27k(rgSet)) {
+        NegControls <- getControlAddress(rgSet, controlType = "Negative")
+    }
+    Green.bg <- apply(Green[NegControls, , drop = FALSE], 2, function(xx) {
+        sort(as.vector(xx))[31]
+    })
+    Red.bg <- apply(Red[NegControls, , drop = FALSE], 2, function(xx) {
+        sort(as.vector(xx))[31]
+    })
+    Green <- pmax2(sweep(Green, 2, Green.bg), 0)
+    Red <- pmax2(sweep(Red, 2, Red.bg), 0)
+    assay(rgSet, "Green") <- Green
+    assay(rgSet, "Red") <- Red
+    rgSet
+}
+
+# Exported functions -----------------------------------------------------------
+
+# TODO: Document: This does not realize the result for a DelayedMatrix-backed
+#       RGChannelSet{Extended}
+preprocessIllumina <- function(rgSet, bg.correct = TRUE,
+                               normalize = c("controls", "no"), reference = 1) {
+    .isRGOrStop(rgSet)
+    normalize <- match.arg(normalize)
+
+    if (normalize == "controls") {
+        rgSet <- normalize.illumina.control(rgSet, reference = reference)
+    }
+    if (bg.correct) {
+        rgSet <- bgcorrect.illumina(rgSet)
+    }
+    out <- preprocessRaw(rgSet)
+    preprocess <- sprintf(
+        "Illumina, bg.correct = %s, normalize = %s, reference = %d",
+        bg.correct, normalize, reference)
+
+    # TODO: The manifest package version is currently not updated since
+    #       `packageVersion(getManifest(rgSet))` fails. `packageVersion()`
+    #       expects a string
+    out@preprocessMethod <- c(
+        rg.norm = preprocess,
+        minfi = as.character(packageVersion("minfi")),
+        manifest = as.character(
+            packageVersion(.getManifestString(rgSet@annotation))))
+    #packageVersion(getManifest(rgSet)))
+    out
+}
+
+########################################################################
+########################################################################
+
+# This function runs different DNAm data processing pipelines from the wateRmelon, minfi, en ENmix package
 # Adapted from: Ori, A. P. S., Lu, A. T., Horvath, S. & Ophoff, R. A. Significant variation in the performance of DNA methylation predictors across data preprocessing and normalization strategies. Genome Biol 23, 225 (2022).
 # DOI: 10.1186/s13059-022-02793-w
 # GitHub: https://github.com/anilpsori/DNAm_pipelines_and_biomarkers/tree/main
@@ -1413,6 +1565,7 @@ runPipelines = function(RGset, method = c(1:101), returnAll = FALSE, selectCpG =
   }
 }
 
+# This function will translate the method number to the pipeline name
 method_to_pipeline = function(method) {
     switch(method,
            "enmix_oob_mean_nonorm_norcp",
@@ -1520,6 +1673,7 @@ method_to_pipeline = function(method) {
     )
 }
 
+# This function will translate the pipeline name to the method number
 pipeline_to_method <- function(pipeline) {
     method_list <- c(
         "enmix_oob_mean_nonorm_norcp" = 1,
