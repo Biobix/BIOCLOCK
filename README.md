@@ -40,4 +40,6 @@ The scripts rely on the following directory structure:
 
 For reproducibility, see the full R session info in [Environment.md](./Environment.md).
 
+## DOI
 
+DOI: 10.5281/zenodo.14674514
