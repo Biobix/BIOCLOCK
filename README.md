@@ -28,12 +28,12 @@ The scripts rely on the following directory structure:
 │   ├── Paper
 │   ├── PrePro
 │   └── QC
-├── PC_Clocks
 ├── Results
 │   ├── Analysis
 │   └── PrePro
 └── Scripts
     └── Additional
+        └── PC_Clocks
 ```
 
 ## Environment Information
