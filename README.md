@@ -11,8 +11,8 @@ This repository contains three main scripts:
 
 It also contains three addtitional scripts:
 - [function_runPipelines.R](./Scripts/Additional/function_runPipelines.R): This script is used to run the 101 preprocessing pipelines and is adapted from this repository: https://github.com/anilpsori/_pipelines_and_biomarkers/tree/main.
-- [Biolearn_EpiAge.py](./Scripts/Additional/Biolearn_EpiAge.py): This script is used to calculate GrimAge epigenetic age using the Biolearn python package (https://github.com/bio-learn/biolearn).
-- [runcalcPCClock.R](./Scripts/Additional/runcalcPCClock.R): This script is used to calculate epigenetic age according to the principal component clocks and is adapted from this repository: https://github.com/MorganLevineLab/PC-Clocks.
+- [Biolearn_EpiAge.py](./Scripts/Additional/Biolearn_EpiAge.py): This script is used to calculate the Horvath1, Horvath2, GrimAge1 and GrimAge2 epigenetic ages using the Biolearn python package (https://github.com/bio-learn/biolearn).
+- [runcalcPCClock.R](./Scripts/Additional/runcalcPCClock.R): This script is used to calculate epigenetic age according to the principal component clocks (PCHorvath1, PCHorvath2, PCGrimAge) and is adapted from this repository: https://github.com/MorganLevineLab/PC-Clocks.
 
 ## Directory structure
 
