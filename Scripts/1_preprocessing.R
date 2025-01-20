@@ -14,12 +14,8 @@
 library(minfi)
 library(ENmix)
 library(wateRmelon)
-library(IlluminaHumanMethylationEPICv2manifest)
-library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
-library(EpiDISH)
 library(dplyr)
 library(tidyr)
-library(feather)
 library(arrow)
 library(readxl)
 library(writexl)
@@ -30,10 +26,18 @@ setwd(paste0("/", file.path("data", "user_homes", "mennovd", "BIOKLOK")))
 # Clone it from: https://github.com/MorganLevineLab/PC-Clocks/tree/main
 # Put the folder in Scripts/Additional and name the folder "PC_Clocks".
 
-dir.create("Data/Objects", showWarnings = FALSE, recursive = TRUE)
-dir.create("Results/PrePro", showWarnings = FALSE, recursive = TRUE)
-dir.create("Images/QC", showWarnings = FALSE, recursive = TRUE)
-dir.create("Images/PrePro", showWarnings = FALSE, recursive = TRUE)
+# install EPICv2 manifest and annotation from GitHub using Bioconductor (not available on conda)
+BiocManager::install("jokergoo/IlluminaHumanMethylationEPICv2manifest", release = "0.99.1", force = FALSE, update = FALSE)
+BiocManager::install("jokergoo/IlluminaHumanMethylationEPICv2anno.20a1.hg38", release = "0.99.0", force = FALSE, update = FALSE)
+library(IlluminaHumanMethylationEPICv2manifest)
+library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
+
+dir.create("Data/Objects", showWarnings = FALSE, recursive = TRUE) # stores saved R objects
+dir.create("Data/Pheno", showWarnings = FALSE, recursive = TRUE) # stores phenotypic data (sample data)
+dir.create("Data/Infinium", showWarnings = FALSE, recursive = TRUE) # stores Infinium EPICv2 array idat files
+dir.create("Results/PrePro", showWarnings = FALSE, recursive = TRUE) # stores results of preprocessing pipelines
+dir.create("Images/QC", showWarnings = FALSE, recursive = TRUE) # stores general quality control images
+dir.create("Images/PrePro", showWarnings = FALSE, recursive = TRUE) # stores quality control images of preprocessing pipelines
 
 ###################################
 ####          Functions         ###
@@ -101,7 +105,7 @@ multifreqpoly(betas_raw_2, main = "Multifreqpoly: Infinium II", xlab = "Beta val
 dev.off()
 
 # Load phenotypic sample data
-pheno <- read_xlsx("Data/Pheno/Sample_Data.xlsx")
+pheno <- read_xlsx("Data/Pheno/Sample Data.xlsx", sheet = "PhenotypicData")
 pheno <- as.data.frame(pheno)
 rownames(pheno) <- pheno$array_id
 pheno <- pheno[colnames(RGset), ]
@@ -126,7 +130,7 @@ for (method in 1:101) {
         output <- runPipelines(RGset, method = method, returnAll = FALSE, removeCpG = QC$badCpG)
         betas <- output$probes
         dir.create(pipeline_data_dir)
-        write_feather(betas, paste0(pipeline_data_dir, "betas.feather"))
+        arrow::write_feather(betas, paste0(pipeline_data_dir, "betas.feather"))
 
         # Remove probe ID column
         CpGs <- betas$ProbeID
@@ -154,7 +158,7 @@ for (method in 1:101) {
         betas <- rm.cgsuffix(betas)
         betas <- as.data.frame(betas)
         betas$id <- rownames(betas)
-        write_feather(betas, paste0(pipeline_data_dir, "betas_no_suffix.feather"))
+        arrow::write_feather(betas, paste0(pipeline_data_dir, "betas_no_suffix.feather"))
     }
 }
 
@@ -163,6 +167,12 @@ for (method in 1:101) {
 ###################################
 
 # Estimate Horvath & GrimAge epigenetic ages using the Biolearn & PC-Clocks packages
+
+# Specify path to mamba/conda python environment and the Additional/Biolearn_EpiAge.py script
+# ! EDIT THIS PATH TO YOUR OWN PATH !
+python <-  "/data/user_homes/mennovd/.conda/envs/Bioclock_py/bin/python"
+script <- "/data/user_homes/mennovd/BIOKLOK/Scripts/Additional/Biolearn_EpiAge.py"
+# see python script: Additional/Biolearn_EpiAge.py
 
 for (method in 1:101) {
 
@@ -180,20 +190,18 @@ for (method in 1:101) {
         mAge <- pheno[,c("array_id", "subject_id", "exercise_timepoint", "sex", "age", "has_replicate")]
         mAge$female <- as.numeric(mAge$sex == "female")
         mAge$sex <- as.numeric(mAge$sex == "male") + 1
-        write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
+        arrow::write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
 
         # see python script: Additional/Biolearn_EpiAge.py
-        python <-  "/data/user_homes/mennovd/BIOKLOK/.venv/bin/python3.10"
-        script <- "/data/user_homes/mennovd/BIOKLOK/Scripts/Additional/Biolearn_EpiAge.py"
         system2(python, args = c(script, pipeline), wait = TRUE)
 
-        biolearn <- arrow::read_feather(paste0(pipeline_data_dir, "biolearn_mAge.feather"))
+        biolearn <- arrow::arrow::read_feather(paste0(pipeline_data_dir, "biolearn_mAge.feather"))
         biolearn <- biolearn[,c("Horvathv1", "Horvathv2", "DNAmGrimAge_V1", "DNAmGrimAge_V2")]
         colnames(biolearn) <- c("Horvath1", "Horvath2", "GrimAge1", "GrimAge2")
         mAge <- cbind(mAge, biolearn)
 
         # PC clocks
-        betas <- arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
+        betas <- arrow::arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
         CpGs <- betas$id
         betas$id <- NULL
         betas <- as.matrix(betas)
@@ -204,7 +212,7 @@ for (method in 1:101) {
         save(PC_mAge, file = paste0(pipeline_data_dir, "PC_mAge.Rdata"))
         
         mAge <- cbind(mAge, PC_mAge)
-        write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
+        arrow::write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
     }
 }
 
@@ -226,7 +234,7 @@ for (method in 1:101) {
 
     if (!file.exists(paste0(pipeline_data_dir, "bloodcells.feather"))) {
 
-        betas <- arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
+        betas <- arrow::arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
         CpGs <- betas$id
         betas$id <- NULL
         betas <- as.matrix(betas)
@@ -243,9 +251,9 @@ for (method in 1:101) {
         # Ensure that the proportions sum to one and are percentage
         bloodFractions <- (bloodFractions / rowSums(bloodFractions))*100
 
-        mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+        mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
         mAge <- cbind(mAge, bloodFractions)
-        write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
+        arrow::write_feather(mAge, paste0(pipeline_data_dir, "mAge.feather"))
         save(bloodFractions, file = paste0(pipeline_data_dir, "bloodcells.Rdata"))
     }
 }
@@ -293,7 +301,7 @@ for (method in 1:101) {
     pipeline <- method_to_pipeline(method)
     cat("Calculating measurement noise:", method, pipeline, "\n")
     pipeline_data_dir <- paste0("Results/PrePro/", pipeline, "/")
-    mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+    mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
 
     # Calculate the technical variance
     techvar <- mAge[mAge$has_replicate, c("subject_id", "exercise_timepoint", predictors)] %>%
@@ -324,6 +332,7 @@ save(BioVar, file = "Data/Objects/BioVar.Rdata")
 # Calculate the ratio of biological variance over technical variance (for each predictor and preprocessing pipeline)
 BT <- BioVar/(TechVar + 1e-10)
 BT_max <- rowMaxs(as.matrix(BT), na.rm = TRUE)
+names(BT_max) <- rownames(BT)
 optimal_pipelines <- sapply(predictors, function(predictor) colnames(BT)[BT[predictor,] == BT_max[predictor]])
 BT_pipelines <- data.frame(predictors = predictors, pipeline = optimal_pipelines)
 BT_pipelines[predictors, "Bio/Tech"] <- BT_max[predictors]
@@ -369,19 +378,19 @@ load("Data/Objects/pheno.Rdata")
 
 pipeline <- "enmix_est_mean_nonorm_rcp"
 pipeline_data_dir <- paste0("Results/PrePro/", pipeline, "/")
-mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
 
 pheno$epigenetic_age_Horvath <- mAge$PCHorvath1
 
 pipeline <- "enmix_neg_nodye_q2_norcp"
 pipeline_data_dir <- paste0("Results/PrePro/", pipeline, "/")
-mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
 
 pheno$epigenetic_age_GrimAge <- mAge$PCGrimAge
 
 pipeline <- "enmix_est_nodye_q3_rcp"
 pipeline_data_dir <- paste0("Results/PrePro/", pipeline, "/")
-mAge <- read_feather(paste0(pipeline_data_dir, "mAge.feather"))
+mAge <- arrow::read_feather(paste0(pipeline_data_dir, "mAge.feather"))
 
 pheno$B_cells_naive <- mAge$Bnv
 pheno$B_cells_memory <- mAge$Bmem

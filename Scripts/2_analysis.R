@@ -135,7 +135,7 @@ save(bio, file = "Data/Objects/bio.Rdata")
 d_bio <- bio %>%
     arrange(subject_id, exercise_timepoint) %>%
     group_by(subject_id) %>%
-    reframe(across(where(is.numeric), ~ -diff(.))) %>%
+    summarize(across(where(is.numeric), ~ -diff(.))) %>%
     ungroup()
 
 save(d_bio, file = "Data/Objects/d_bio.Rdata")
@@ -166,7 +166,7 @@ for (variable in colnames(table_data)) {
     sd_post <- sd(table_data %>% filter(exercise_timepoint == "post") %>% pull(variable), na.rm = TRUE)
     formula <- paste(variable, "~ (1|subject_id) + factor(exercise_timepoint)")
     model <- lmer(formula, data = table_data)
-    p <- summary(model)$coefficients["factor(exercise_timepoint)pre", "Pr(>|t|)"]
+    p <- summary(model)$coefficients["factor(exercise_timepoint)post", "Pr(>|t|)"]
     new_row <- data.frame(variable = variable, mean_pre = m_pre, sd_pre = sd_pre, 
                             mean_post = m_post, sd_post = sd_post, p_value = p, stringsAsFactors = FALSE)
     results_table <- rbind(results_table, new_row)
@@ -200,7 +200,7 @@ t <- t.test(
 print(t$p.value)
 # 0.1087038
 print(t$estimate[1] - t$estimate[2])
-# 2.011997
+# 1.972114
 
 ### Calculate partial marginal variance of EA explained by CA (including replicates)
 
