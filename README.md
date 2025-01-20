@@ -38,8 +38,10 @@ The scripts rely on the following directory structure:
 
 ## Environment Information
 
-Platform: Linux-5.15.0-76-generic-x86_64-with-glibc2.35
+Platform: Linux-5.15.0-76-generic-x86_64-with-glibc2.35 
+
 OS: Linux (Ubuntu 22.04.5 LTS)
+
 Machine: x86_64 x86_64-conda-linux-gnu (64-bit)
 
 For reproducibility, the mamba/conda environments (one for R and one for Python) are available in the folder [Environments](./Environments). There is both a completely resolved environment and a minimal environment for each. In case of system incompatibilities when using the complete environment, use the minimal one.
