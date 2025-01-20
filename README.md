@@ -38,11 +38,18 @@ The scripts rely on the following directory structure:
 
 ## Environment Information
 
+Platform: Linux-5.15.0-76-generic-x86_64-with-glibc2.35
+OS: Linux (Ubuntu 22.04.5 LTS)
+Machine: x86_64 x86_64-conda-linux-gnu (64-bit)
+
 For reproducibility, see the full mamba/conda environment in [Bioclock_env.yml](./Bioclock_env.yml).
 
-The following packages will need to be installed in the R session using Bioconductor as they are not available in the conda package repository:
+The following packages are installed in the R session using Bioconductor as they are not available in the conda package repository:
  - illuminaHumanMethylationEPICv2manifest (version=0.99.1)
  - illuminaHumanMethylationEPICv2anno.20a1.hg38 (version=0.99.0)
+
+This repository will need to be cloned in order to calculate the PC clocks:
+https://github.com/MorganLevineLab/PC-Clocks
 
 ## DOI
 
