@@ -42,17 +42,17 @@ Platform: Linux-5.15.0-76-generic-x86_64-with-glibc2.35
 OS: Linux (Ubuntu 22.04.5 LTS)
 Machine: x86_64 x86_64-conda-linux-gnu (64-bit)
 
-For reproducibility, see the full mamba/conda environment in [Bioclock_env.yml](./Bioclock_env.yml).
+For reproducibility, the mamba/conda environments (one for R and one for Python) are available in the folder [Environments](./Environments). There is both a completely resolved environment and a minimal environment for each. In case of system incompatibiblities when using the complete environment, use the minimal one.
 
-The following packages are installed in the R session using Bioconductor as they are not available in the conda package repository:
- - illuminaHumanMethylationEPICv2manifest (version=0.99.1)
- - illuminaHumanMethylationEPICv2anno.20a1.hg38 (version=0.99.0)
+The following GitHub packages are installed in the R session using Bioconductor as they are not available in the conda package repository:
+ - illuminaHumanMethylationEPICv2manifest (GitHub release 0.99.1)
+ - illuminaHumanMethylationEPICv2anno.20a1.hg38 (GitHub release 0.99.0)
 
 This repository will need to be cloned in order to calculate the PC clocks:
 https://github.com/MorganLevineLab/PC-Clocks
 
 ## DOI
 
-Zenodo DOI for this code:
+Zenodo DOI for this repository:
 
 DOI: 10.5281/zenodo.14674514
