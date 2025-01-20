@@ -9,10 +9,11 @@ This repository contains three main scripts:
 - [2_analysis.R](./Scripts/2_analysis.R): This script contains the statistical analyses perfomed on the epigenetic ages and other phenotypic variables.
 - [3_figures.R](./Scripts/3_figures.R): This script contains the code used to generate the figures in the manuscript.
 
-It also contains three addtitional scripts:
+It also contains four addtitional scripts:
 - [function_runPipelines.R](./Scripts/Additional/function_runPipelines.R): This script is used to run the 101 preprocessing pipelines and is adapted from this repository: https://github.com/anilpsori/_pipelines_and_biomarkers/tree/main.
 - [Biolearn_EpiAge.py](./Scripts/Additional/Biolearn_EpiAge.py): This script is used to calculate the Horvath1, Horvath2, GrimAge1 and GrimAge2 epigenetic ages using the Biolearn python package (https://github.com/bio-learn/biolearn).
 - [runcalcPCClock.R](./Scripts/Additional/runcalcPCClock.R): This script is used to calculate epigenetic age according to the principal component clocks (PCHorvath1, PCHorvath2, PCGrimAge) and is adapted from this repository: https://github.com/MorganLevineLab/PC-Clocks.
+- [plottingFunctions.R](./Scripts/Additional/plottingFunctions.R): This script contains additional plotting fuctions used in [3_figures.R](./Scripts/3_figures.R).
 
 ## Directory structure
 
@@ -50,8 +51,7 @@ The following GitHub packages are installed in the R session using Bioconductor 
  - illuminaHumanMethylationEPICv2manifest (GitHub release 0.99.1)
  - illuminaHumanMethylationEPICv2anno.20a1.hg38 (GitHub release 0.99.0)
 
-This repository will need to be cloned in order to calculate the PC clocks:
-https://github.com/MorganLevineLab/PC-Clocks
+The PC-CLocks repository (https://github.com/MorganLevineLab/PC-Clocks) will need to be cloned into the Scripts/Additional folder and named "PC_Clocks" in order to calculate the PC clocks.
 
 ## DOI
 
