@@ -42,7 +42,7 @@ Platform: Linux-5.15.0-76-generic-x86_64-with-glibc2.35
 OS: Linux (Ubuntu 22.04.5 LTS)
 Machine: x86_64 x86_64-conda-linux-gnu (64-bit)
 
-For reproducibility, the mamba/conda environments (one for R and one for Python) are available in the folder [Environments](./Environments). There is both a completely resolved environment and a minimal environment for each. In case of system incompatibiblities when using the complete environment, use the minimal one.
+For reproducibility, the mamba/conda environments (one for R and one for Python) are available in the folder [Environments](./Environments). There is both a completely resolved environment and a minimal environment for each. In case of system incompatibilities when using the complete environment, use the minimal one.
 
 The following GitHub packages are installed in the R session using Bioconductor as they are not available in the conda package repository:
  - illuminaHumanMethylationEPICv2manifest (GitHub release 0.99.1)
