@@ -2,7 +2,6 @@
 
 import os
 import sys
-import feather
 import pyarrow.feather as feather
 import pandas as pd
 import biolearn
@@ -11,7 +10,7 @@ from biolearn.model_gallery import ModelGallery
 # Access command-line arguments passed from R
 pipeline = sys.argv[1] 
 
-os.chdir("/data/user_homes/mennovd/BIOKLOK/Results/PrePro/" + pipeline)
+os.chdir("./Results/PrePro/" + pipeline)
 
 betas = feather.read_feather("betas_no_suffix.feather")
 betas.set_index("id", inplace=True)
