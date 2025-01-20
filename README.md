@@ -38,8 +38,14 @@ The scripts rely on the following directory structure:
 
 ## Environment Information
 
-For reproducibility, see the full R session info in [Environment.md](./Environment.md).
+For reproducibility, see the full mamba/conda environment in [Bioclock_env.yml](./Bioclock_env.yml).
+
+The following packages will need to be installed in the R session using Bioconductor as they are not available in the conda package repository:
+ - illuminaHumanMethylationEPICv2manifest (version=0.99.1)
+ - illuminaHumanMethylationEPICv2anno.20a1.hg38 (version=0.99.0)
 
 ## DOI
+
+Zenodod DOI for this code:
 
 DOI: 10.5281/zenodo.14674514
