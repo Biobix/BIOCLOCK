@@ -46,6 +46,6 @@ The following packages will need to be installed in the R session using Biocondu
 
 ## DOI
 
-Zenodod DOI for this code:
+Zenodo DOI for this code:
 
 DOI: 10.5281/zenodo.14674514
