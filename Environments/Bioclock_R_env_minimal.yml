@@ -1,0 +1,25 @@
+name: Bioclock_R
+channels:
+- bioconda
+- conda-forge
+dependencies:
+- openssl=1.1.1
+- libssh2=1.10.0
+- r-base=4.0.5
+- r-remotes=2.4.2
+- bioconductor-minfi=1.36.0
+- bioconductor-enmix=1.26.0
+- bioconductor-watermelon=1.34.0
+- bioconductor-epidish=2.6.0
+- r-dplyr=1.0.10
+- r-tidyr=1.2.1
+- r-readxl=1.4.1
+- r-writexl=1.4.0
+- r-stringr=1.4.1
+- r-arrow=9.0.0
+- r-lme4=1.1_29
+- r-lmerTest=3.1_3
+- r-mumin=1.46.0
+- r-ggplot2=3.3.6
+- r-ggnewscale=0.4.7
+- r-patchwork=1.1.2
