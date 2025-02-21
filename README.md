@@ -9,7 +9,7 @@ This repository contains three main scripts:
 - [2_analysis.R](./Scripts/2_analysis.R): This script contains the statistical analyses perfomed on the epigenetic ages and other phenotypic variables.
 - [3_figures.R](./Scripts/3_figures.R): This script contains the code used to generate the figures in the manuscript.
 
-It also contains four addtitional scripts:
+It also contains four additional scripts:
 - [function_runPipelines.R](./Scripts/Additional/function_runPipelines.R): This script is used to run the 101 preprocessing pipelines and is adapted from this repository: https://github.com/anilpsori/_pipelines_and_biomarkers/tree/main.
 - [Biolearn_EpiAge.py](./Scripts/Additional/Biolearn_EpiAge.py): This script is used to calculate the Horvath1, Horvath2, GrimAge1 and GrimAge2 epigenetic ages using the Biolearn python package (https://github.com/bio-learn/biolearn).
 - [runcalcPCClock.R](./Scripts/Additional/runcalcPCClock.R): This script is used to calculate epigenetic age according to the principal component clocks (PCHorvath1, PCHorvath2, PCGrimAge) and is adapted from this repository: https://github.com/MorganLevineLab/PC-Clocks.
