@@ -14,6 +14,7 @@
 library(minfi)
 library(ENmix)
 library(wateRmelon)
+library(EpiDISH)
 library(dplyr)
 library(tidyr)
 library(arrow)
@@ -49,7 +50,7 @@ source("Scripts/Additional/run_calcPCClocks.R")
 # Preprocessing pipeline script is retrieved from: https://github.com/anilpsori/_pipelines_and_biomarkers/tree/main
 source("Scripts/Additional/function_runPipelines.R")
 
-# Function to summarize duplicated CpGs for EPIC2 (retrieved from ENmix: https://github.com/xuz1/ENmix)
+# Function to summarize duplicated CpGs for EPICv2 (retrieved from ENmix: https://github.com/xuz1/ENmix)
 rm.cgsuffix <- function(datMeth) {
     cgid <- sapply(strsplit(rownames(datMeth), split = "_"), unlist)[1, ]
     dupcg <- unique(cgid[duplicated(cgid)])
@@ -195,13 +196,13 @@ for (method in 1:101) {
         # see python script: Additional/Biolearn_EpiAge.py
         system2(python, args = c(script, pipeline), wait = TRUE)
 
-        biolearn <- arrow::arrow::read_feather(paste0(pipeline_data_dir, "biolearn_mAge.feather"))
+        biolearn <- arrow::read_feather(paste0(pipeline_data_dir, "biolearn_mAge.feather"))
         biolearn <- biolearn[,c("Horvathv1", "Horvathv2", "DNAmGrimAge_V1", "DNAmGrimAge_V2")]
         colnames(biolearn) <- c("Horvath1", "Horvath2", "GrimAge1", "GrimAge2")
         mAge <- cbind(mAge, biolearn)
 
         # PC clocks
-        betas <- arrow::arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
+        betas <- arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
         CpGs <- betas$id
         betas$id <- NULL
         betas <- as.matrix(betas)
@@ -221,6 +222,8 @@ for (method in 1:101) {
 ###################################
 
 # Estimate blood leukocyte fractions using the EpiDISH RCP method
+
+# Load the reference matrix for the 12 leukocyte fractions on the EPIC array
 data(cent12CT.m)
 
 for (method in 1:101) {
@@ -234,16 +237,16 @@ for (method in 1:101) {
 
     if (!file.exists(paste0(pipeline_data_dir, "bloodcells.feather"))) {
 
-        betas <- arrow::arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
+        betas <- arrow::read_feather(paste0(pipeline_data_dir, "betas_no_suffix.feather"))
         CpGs <- betas$id
         betas$id <- NULL
         betas <- as.matrix(betas)
         rownames(betas) <- CpGs
 
         # Intersect betas and reference matrix CpGs
-        cpgs <- intersect(rownames(betas), rownames(reference_matrix_betas))
+        cpgs <- intersect(rownames(betas), rownames(cent12CT.m))
         betas_subset <- betas[cpgs,]
-        ref_subset <- as.matrix(reference_matrix_betas)[cpgs,]
+        ref_subset <- as.matrix(cent12CT.m)[cpgs,]
 
         # Estimate leukocyte proportions
         bloodFractions <- epidish(beta.m = betas_subset, ref.m = ref_subset, method = "RPC")$estF
@@ -258,9 +261,9 @@ for (method in 1:101) {
     }
 }
 
-##########################################
-####    Preprocessing optimalisation   ###
-##########################################
+########################################
+####    Preprocessing optimization   ###
+########################################
 
 bloodcells <- c(
     "CD4Tnv",
